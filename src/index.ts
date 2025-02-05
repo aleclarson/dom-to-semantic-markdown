@@ -78,9 +78,8 @@ export function convertElementToMarkdown(
   options?: ConversionOptions,
 ): string {
   const ast = htmlToMarkdownAST(element, options)
-
   if (options?.refifyUrls) {
-    options.urlMap = refifyUrls(ast)
+    refifyUrls(ast, (options.urlMap ??= {}))
   }
   return markdownASTToString(ast, options)
 }

@@ -69,23 +69,23 @@ const processUrl = (url: string, prefixesToRefs: Record<string, string>) => {
 
 export function refifyUrls(
   markdownElement: Node | Node[],
-  prefixesToRefs: Record<string, string> = {},
+  urlMap: Record<string, string>,
 ) {
   if (Array.isArray(markdownElement)) {
-    markdownElement.forEach(element => refifyUrls(element, prefixesToRefs))
+    markdownElement.forEach(element => refifyUrls(element, urlMap))
   } else {
     switch (markdownElement.type) {
       case 'link':
-        markdownElement.href = processUrl(markdownElement.href, prefixesToRefs)
-        refifyUrls(markdownElement.content, prefixesToRefs)
+        markdownElement.href = processUrl(markdownElement.href, urlMap)
+        refifyUrls(markdownElement.content, urlMap)
         break
       case 'image':
       case 'video':
-        markdownElement.src = processUrl(markdownElement.src, prefixesToRefs)
+        markdownElement.src = processUrl(markdownElement.src, urlMap)
         break
       case 'list':
         markdownElement.items.forEach(item =>
-          item.content.forEach(_ => refifyUrls(_, prefixesToRefs)),
+          item.content.forEach(_ => refifyUrls(_, urlMap)),
         )
         break
       case 'table':
@@ -93,15 +93,15 @@ export function refifyUrls(
           row.cells.forEach(cell =>
             typeof cell.content === 'string'
               ? null
-              : refifyUrls(cell.content, prefixesToRefs),
+              : refifyUrls(cell.content, urlMap),
           ),
         )
         break
       case 'blockquote':
       case 'semanticHtml':
-        refifyUrls(markdownElement.content, prefixesToRefs)
+        refifyUrls(markdownElement.content, urlMap)
         break
     }
   }
-  return prefixesToRefs
+  return urlMap
 }
