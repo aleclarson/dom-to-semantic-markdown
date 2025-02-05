@@ -153,10 +153,6 @@ export interface ExtractOptions {
    */
   websiteDomain?: string
   /**
-   * Whether to extract the main content of the HTML, ignoring elements like headers and footers.
-   */
-  extractMainContent?: boolean
-  /**
    * Controls whether to include metadata extracted from the HTML head.
    * - `'basic'`: Includes standard meta tags like title, description, and keywords.
    * - `'extended'`: Includes basic meta tags, Open Graph tags, Twitter Card tags, and JSON-LD data.
@@ -217,8 +213,4 @@ export interface ConversionOptions extends ExtractOptions, RenderOptions {
    * A map of URL references to their original values, generated when `refifyUrls` is enabled.
    */
   urlMap?: Record<string, string>
-  /**
-   * Provides an override for the DOMParser object used to parse the HTML.
-   */
-  overrideDOMParser?: DOMParser
 }

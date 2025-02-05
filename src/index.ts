@@ -19,7 +19,16 @@ export type { ConversionOptions, SemanticMarkdownAST }
  */
 export function convertHtmlToMarkdown(
   html: string,
-  options?: ConversionOptions,
+  options?: ConversionOptions & {
+    /**
+     * Whether to extract the main content of the HTML, ignoring elements like headers and footers.
+     */
+    extractMainContent?: boolean
+    /**
+     * Provides an override for the DOMParser object used to parse the HTML.
+     */
+    overrideDOMParser?: DOMParser
+  },
 ): string {
   const parser =
     options?.overrideDOMParser ??
