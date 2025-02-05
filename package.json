@@ -16,7 +16,7 @@
   "scripts": {
     "prepublishOnly": "pnpm build",
     "build": "tsup --clean --treeshake=smallest",
-    "dev": "rimraf dist && tsup --watch",
+    "dev": "rimraf dist && tsup --watch --sourcemap",
     "format": "biome check --fix --unsafe",
     "test": "jest",
     "example": "open examples/browser.html"
