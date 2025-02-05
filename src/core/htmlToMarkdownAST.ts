@@ -1,6 +1,6 @@
 import type {
   ExtractOptions,
-  MetaDataNode,
+  Node,
   SemanticMarkdownAST,
 } from '../types/markdownTypes'
 import { _Node } from './ElementNode'
@@ -9,8 +9,8 @@ export function htmlToMarkdownAST(
   element: Element,
   options?: ExtractOptions,
   indentLevel = 0,
-): SemanticMarkdownAST[] {
-  const result: SemanticMarkdownAST[] = []
+): Node[] {
+  const result: Node[] = []
 
   const debugLog = (message: string) => {
     if (options?.debug) {
@@ -227,10 +227,10 @@ export function htmlToMarkdownAST(
         const node = {
           type: 'meta',
           content: Object.create(null),
-        } as MetaDataNode
+        } as SemanticMarkdownAST.MetaDataNode
 
         const setContent = (
-          type: keyof MetaDataNode['content'],
+          type: keyof SemanticMarkdownAST.MetaDataNode['content'],
           key: string | Record<string, any>,
           value?: string,
         ) => {

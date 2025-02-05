@@ -1,4 +1,4 @@
-import type { SemanticMarkdownAST } from '../types/markdownTypes'
+import type { Node } from '../types/markdownTypes'
 
 export const getMainContent = (markdownStr: string) => {
   if (markdownStr.includes('<-main->')) {
@@ -20,12 +20,10 @@ export const isNot =
 const isString = (x: any): x is string => typeof x === 'string'
 
 export function findInAST(
-  markdownElement: SemanticMarkdownAST | SemanticMarkdownAST[],
-  checker: (markdownElement: SemanticMarkdownAST) => boolean,
-): SemanticMarkdownAST | undefined {
-  const loopCheck = (
-    z: SemanticMarkdownAST[],
-  ): SemanticMarkdownAST | undefined => {
+  markdownElement: Node | Node[],
+  checker: (markdownElement: Node) => boolean,
+): Node | undefined {
+  const loopCheck = (z: Node[]): Node | undefined => {
     for (const element of z) {
       const found = findInAST(element, checker)
       if (found) {
@@ -60,11 +58,11 @@ export function findInAST(
 }
 
 export function findAllInAST(
-  markdownElement: SemanticMarkdownAST | SemanticMarkdownAST[],
-  checker: (markdownElement: SemanticMarkdownAST) => boolean,
-): SemanticMarkdownAST[] {
-  const loopCheck = (z: SemanticMarkdownAST[]): SemanticMarkdownAST[] => {
-    let out: SemanticMarkdownAST[] = []
+  markdownElement: Node | Node[],
+  checker: (markdownElement: Node) => boolean,
+): Node[] {
+  const loopCheck = (z: Node[]): Node[] => {
+    let out: Node[] = []
     for (const element of z) {
       const found = findAllInAST(element, checker)
       out = [...out, ...found]

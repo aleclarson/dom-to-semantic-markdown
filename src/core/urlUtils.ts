@@ -1,4 +1,4 @@
-import type { SemanticMarkdownAST } from '../types/markdownTypes'
+import type { Node } from '../types/markdownTypes'
 
 const mediaSuffixes = [
   'jpeg',
@@ -68,7 +68,7 @@ const processUrl = (url: string, prefixesToRefs: Record<string, string>) => {
 }
 
 export function refifyUrls(
-  markdownElement: SemanticMarkdownAST | SemanticMarkdownAST[],
+  markdownElement: Node | Node[],
   prefixesToRefs: Record<string, string> = {},
 ) {
   if (Array.isArray(markdownElement)) {

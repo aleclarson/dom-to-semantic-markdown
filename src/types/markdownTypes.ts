@@ -1,143 +1,147 @@
-export type BoldNode = {
-  type: 'bold'
-  content: string | SemanticMarkdownAST[]
-}
-export type ItalicNode = {
-  type: 'italic'
-  content: string | SemanticMarkdownAST[]
-}
-export type StrikethroughNode = {
-  type: 'strikethrough'
-  content: string | SemanticMarkdownAST[]
-}
-// Define heading levels
-export type HeadingNode = {
-  type: 'heading'
-  level: 1 | 2 | 3 | 4 | 5 | 6
-  content: string | SemanticMarkdownAST[]
-}
-// Define links and images
-export type LinkNode = {
-  type: 'link'
-  href: string
-  content: SemanticMarkdownAST[]
-}
-export type ImageNode = {
-  type: 'image'
-  src: string
-  alt?: string
-}
-// Define lists
-export type ListItemNode = {
-  type: 'listItem'
-  content: SemanticMarkdownAST[]
-}
-export type ListNode = {
-  type: 'list'
-  ordered: boolean
-  items: ListItemNode[]
-}
-// Define tables
-export type TableCellNode = {
-  type: 'tableCell'
-  content: string | SemanticMarkdownAST[]
-  colId?: string // Add column ID to TableCell
-  colspan?: number
-  rowspan?: number
-}
-export type TableRowNode = {
-  type: 'tableRow'
-  cells: TableCellNode[]
-}
-export type TableNode = {
-  type: 'table'
-  rows: TableRowNode[]
-  colIds?: string[] // Add column IDs to TableElement
-}
-// Define code elements
-export type CodeNode = {
-  type: 'code'
-  language?: string
-  content: string
-  inline: boolean
-}
-// Define blockquotes
-export type BlockquoteNode = {
-  type: 'blockquote'
-  content: SemanticMarkdownAST[]
-}
-export type CustomNode = {
-  type: 'custom'
-  content: any
-}
-// Define semantic HTML elements (like header, footer)
-export type SemanticHtmlNode = {
-  type: 'semanticHtml'
-  htmlType:
-    | 'article'
-    | 'aside'
-    | 'details'
-    | 'figcaption'
-    | 'figure'
-    | 'footer'
-    | 'header'
-    | 'main'
-    | 'mark'
-    | 'nav'
-    | 'section'
-    | 'summary'
-    | 'time'
-  content: SemanticMarkdownAST[]
-}
-export type VideoNode = {
-  type: 'video'
-  src: string
-  poster?: string
-  controls?: boolean
-}
-export type TextNode = {
-  type: 'text'
-  content: string
-}
+export type Node = SemanticMarkdownAST.Node
 
-export type MetaDataNode = {
-  type: 'meta'
-  content: {
-    /**
-     * Standard meta tags (key-value pairs)
-     */
-    standard?: Map<string, string>
-    /**
-     * Open Graph tags (key-value pairs)
-     */
-    openGraph?: Map<string, string>
-    /**
-     * Twitter Card tags (key-value pairs)
-     */
-    twitter?: Map<string, string>
-    /**
-     * JSON-LD data
-     */
-    jsonLd?: Record<string, any>[]
+export declare namespace SemanticMarkdownAST {
+  export type BoldNode = {
+    type: 'bold'
+    content: string | Node[]
   }
-}
+  export type ItalicNode = {
+    type: 'italic'
+    content: string | Node[]
+  }
+  export type StrikethroughNode = {
+    type: 'strikethrough'
+    content: string | Node[]
+  }
+  // Define heading levels
+  export type HeadingNode = {
+    type: 'heading'
+    level: 1 | 2 | 3 | 4 | 5 | 6
+    content: string | Node[]
+  }
+  // Define links and images
+  export type LinkNode = {
+    type: 'link'
+    href: string
+    content: Node[]
+  }
+  export type ImageNode = {
+    type: 'image'
+    src: string
+    alt?: string
+  }
+  // Define lists
+  export type ListItemNode = {
+    type: 'listItem'
+    content: Node[]
+  }
+  export type ListNode = {
+    type: 'list'
+    ordered: boolean
+    items: ListItemNode[]
+  }
+  // Define tables
+  export type TableCellNode = {
+    type: 'tableCell'
+    content: string | Node[]
+    colId?: string // Add column ID to TableCell
+    colspan?: number
+    rowspan?: number
+  }
+  export type TableRowNode = {
+    type: 'tableRow'
+    cells: TableCellNode[]
+  }
+  export type TableNode = {
+    type: 'table'
+    rows: TableRowNode[]
+    colIds?: string[] // Add column IDs to TableElement
+  }
+  // Define code elements
+  export type CodeNode = {
+    type: 'code'
+    language?: string
+    content: string
+    inline: boolean
+  }
+  // Define blockquotes
+  export type BlockquoteNode = {
+    type: 'blockquote'
+    content: Node[]
+  }
+  export type CustomNode = {
+    type: 'custom'
+    content: any
+  }
+  // Define semantic HTML elements (like header, footer)
+  export type SemanticHtmlNode = {
+    type: 'semanticHtml'
+    htmlType:
+      | 'article'
+      | 'aside'
+      | 'details'
+      | 'figcaption'
+      | 'figure'
+      | 'footer'
+      | 'header'
+      | 'main'
+      | 'mark'
+      | 'nav'
+      | 'section'
+      | 'summary'
+      | 'time'
+    content: Node[]
+  }
+  export type VideoNode = {
+    type: 'video'
+    src: string
+    poster?: string
+    controls?: boolean
+  }
+  export type TextNode = {
+    type: 'text'
+    content: string
+  }
 
-export type SemanticMarkdownAST =
-  | TextNode
-  | BoldNode
-  | ItalicNode
-  | StrikethroughNode
-  | HeadingNode
-  | LinkNode
-  | ImageNode
-  | VideoNode
-  | ListNode
-  | TableNode
-  | CodeNode
-  | BlockquoteNode
-  | SemanticHtmlNode
-  | CustomNode
-  | MetaDataNode
+  export type MetaDataNode = {
+    type: 'meta'
+    content: {
+      /**
+       * Standard meta tags (key-value pairs)
+       */
+      standard?: Map<string, string>
+      /**
+       * Open Graph tags (key-value pairs)
+       */
+      openGraph?: Map<string, string>
+      /**
+       * Twitter Card tags (key-value pairs)
+       */
+      twitter?: Map<string, string>
+      /**
+       * JSON-LD data
+       */
+      jsonLd?: Record<string, any>[]
+    }
+  }
+
+  export type Node =
+    | TextNode
+    | BoldNode
+    | ItalicNode
+    | StrikethroughNode
+    | HeadingNode
+    | LinkNode
+    | ImageNode
+    | VideoNode
+    | ListNode
+    | TableNode
+    | CodeNode
+    | BlockquoteNode
+    | SemanticHtmlNode
+    | CustomNode
+    | MetaDataNode
+}
 
 export interface ExtractOptions {
   /**
@@ -170,7 +174,7 @@ export interface ExtractOptions {
     element: Element,
     options: ConversionOptions,
     indentLevel: number,
-  ) => SemanticMarkdownAST[] | undefined
+  ) => Node[] | undefined
   /**
    * Provides a function to process unhandled HTML elements.
    */
@@ -178,7 +182,7 @@ export interface ExtractOptions {
     element: Element,
     options: ConversionOptions,
     indentLevel: number,
-  ) => SemanticMarkdownAST[] | undefined
+  ) => Node[] | undefined
 }
 
 export interface RenderOptions {
@@ -190,7 +194,7 @@ export interface RenderOptions {
    * Provides a function to override the default node rendering logic.
    */
   overrideNodeRenderer?: (
-    node: SemanticMarkdownAST,
+    node: Node,
     options: ConversionOptions,
     indentLevel: number,
   ) => string | undefined
@@ -198,7 +202,7 @@ export interface RenderOptions {
    * Provides a function to render custom nodes.
    */
   renderCustomNode?: (
-    node: CustomNode,
+    node: SemanticMarkdownAST.CustomNode,
     options: ConversionOptions,
     indentLevel: number,
   ) => string | undefined

@@ -1,10 +1,11 @@
+import { findAllInAST, findInAST } from './core/astUtils'
+import { findMainContent, wrapMainContent } from './core/domUtils'
 import { htmlToMarkdownAST } from './core/htmlToMarkdownAST'
 import { markdownASTToString } from './core/markdownASTToString'
-import { findMainContent, wrapMainContent } from './core/domUtils'
 import { refifyUrls } from './core/urlUtils'
-import { findInAST, findAllInAST } from './core/astUtils'
 import type {
   ConversionOptions,
+  Node,
   SemanticMarkdownAST,
 } from './types/markdownTypes'
 
@@ -82,9 +83,9 @@ export function convertElementToMarkdown(
  * @returns The first matching node, or undefined if not found.
  */
 export function findInMarkdownAST(
-  ast: SemanticMarkdownAST | SemanticMarkdownAST[],
-  predicate: (node: SemanticMarkdownAST) => boolean,
-): SemanticMarkdownAST | undefined {
+  ast: Node | Node[],
+  predicate: (node: Node) => boolean,
+): Node | undefined {
   return findInAST(ast, predicate)
 }
 
@@ -95,17 +96,17 @@ export function findInMarkdownAST(
  * @returns An array of all matching nodes.
  */
 export function findAllInMarkdownAST(
-  ast: SemanticMarkdownAST | SemanticMarkdownAST[],
-  predicate: (node: SemanticMarkdownAST) => boolean,
-): SemanticMarkdownAST[] {
+  ast: Node | Node[],
+  predicate: (node: Node) => boolean,
+): Node[] {
   return findAllInAST(ast, predicate)
 }
 
 // Re-export core functions for advanced usage
 export {
+  findMainContent,
   htmlToMarkdownAST,
   markdownASTToString,
-  findMainContent,
   refifyUrls,
   wrapMainContent,
 }

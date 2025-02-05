@@ -1,12 +1,12 @@
 import { findInMarkdownAST } from '../index'
 import type {
   ConversionOptions,
+  Node,
   RenderOptions,
-  SemanticMarkdownAST,
 } from '../types/markdownTypes'
 
 export function markdownASTToString(
-  nodes: SemanticMarkdownAST[],
+  nodes: Node[],
   options?: RenderOptions,
   indentLevel = 0,
 ): string {
@@ -17,7 +17,7 @@ export function markdownASTToString(
 }
 
 function markdownMetaASTToString(
-  nodes: SemanticMarkdownAST[],
+  nodes: Node[],
   options?: RenderOptions,
 ): string {
   let markdownString = ''
@@ -65,7 +65,7 @@ function markdownMetaASTToString(
 }
 
 function markdownContentASTToString(
-  nodes: SemanticMarkdownAST[],
+  nodes: Node[],
   options?: ConversionOptions,
   indentLevel = 0,
 ): string {
