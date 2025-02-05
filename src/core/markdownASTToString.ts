@@ -11,7 +11,7 @@ export function markdownASTToString(
   indentLevel = 0,
 ): string {
   let markdownString = ''
-  markdownString += markdownMetaASTToString(nodes, options, indentLevel)
+  markdownString += markdownMetaASTToString(nodes, options)
   markdownString += markdownContentASTToString(nodes, options, indentLevel)
   return markdownString
 }
@@ -19,57 +19,46 @@ export function markdownASTToString(
 function markdownMetaASTToString(
   nodes: SemanticMarkdownAST[],
   options?: RenderOptions,
-  indentLevel = 0,
 ): string {
   let markdownString = ''
 
   if (options?.emitFrontMatter) {
-    // include meta-data
-    markdownString += '---\n'
     const node = findInMarkdownAST(nodes, _ => _.type === 'meta')
     if (node?.type === 'meta') {
-      if (node.content.standard) {
-        Object.keys(node.content.standard).forEach(key => {
-          markdownString += `${key}: "${node.content.standard![key]}"\n`
-        })
-      }
+      node.content.standard?.forEach((value, key) => {
+        markdownString += `${key}: ${JSON.stringify(value)}\n`
+      })
 
-      if (
-        node.content.openGraph &&
-        Object.keys(node.content.openGraph).length > 0
-      ) {
+      if (node.content.openGraph) {
         markdownString += 'openGraph:\n'
-        for (const [key, value] of Object.entries(node.content.openGraph)) {
-          markdownString += `  ${key}: "${value}"\n`
+        for (const [key, value] of node.content.openGraph) {
+          markdownString += `  ${key}: ${JSON.stringify(value)}\n`
         }
       }
 
-      if (
-        node.content.twitter &&
-        Object.keys(node.content.twitter).length > 0
-      ) {
+      if (node.content.twitter) {
         markdownString += 'twitter:\n'
-        for (const [key, value] of Object.entries(node.content.twitter)) {
-          markdownString += `  ${key}: "${value}"\n`
+        for (const [key, value] of node.content.twitter) {
+          markdownString += `  ${key}: ${JSON.stringify(value)}\n`
         }
       }
 
-      if (node.content.jsonLd && node.content.jsonLd.length > 0) {
+      if (node.content.jsonLd) {
         markdownString += 'schema:\n'
-        node.content.jsonLd.forEach(item => {
-          const {
-            '@context': jldContext,
-            '@type': jldType,
-            ...semanticData
-          } = item
-          markdownString += `  ${jldType ?? '(unknown type)'}:\n`
-          Object.keys(semanticData).forEach(key => {
-            markdownString += `    ${key}: ${JSON.stringify(semanticData[key])}\n`
-          })
-        })
+        node.content.jsonLd.forEach(
+          ({ '@context': jldContext, '@type': jldType, ...semanticData }) => {
+            markdownString += `  ${jldType ?? '(unknown type)'}:\n`
+            Object.keys(semanticData).forEach(key => {
+              markdownString += `    ${key}: ${JSON.stringify(semanticData[key])}\n`
+            })
+          },
+        )
       }
     }
-    markdownString += '---\n\n'
+
+    if (markdownString.length > 0) {
+      markdownString = '---\n' + markdownString + '---\n\n'
+    }
   }
 
   return markdownString

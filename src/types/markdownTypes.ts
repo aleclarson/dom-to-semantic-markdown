@@ -103,12 +103,22 @@ export type TextNode = {
 export type MetaDataNode = {
   type: 'meta'
   content: {
-    standard?: Record<string, string> // Standard meta tags (key-value pairs)
-    openGraph?: Record<string, string> // Open Graph tags
-    twitter?: Record<string, string> // Twitter Card tags
-    jsonLd?: {
-      [key: string]: any
-    }[] // JSON-LD data
+    /**
+     * Standard meta tags (key-value pairs)
+     */
+    standard?: Map<string, string>
+    /**
+     * Open Graph tags (key-value pairs)
+     */
+    openGraph?: Map<string, string>
+    /**
+     * Twitter Card tags (key-value pairs)
+     */
+    twitter?: Map<string, string>
+    /**
+     * JSON-LD data
+     */
+    jsonLd?: Record<string, any>[]
   }
 }
 

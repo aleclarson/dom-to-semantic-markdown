@@ -226,16 +226,28 @@ export function htmlToMarkdownAST(
       ) {
         const node = {
           type: 'meta',
-          content: {
-            standard: {},
-            openGraph: {},
-            twitter: {},
-          },
+          content: Object.create(null),
         } as MetaDataNode
 
+        const setContent = (
+          type: keyof MetaDataNode['content'],
+          key: string | Record<string, any>,
+          value?: string,
+        ) => {
+          if (type === 'jsonLd') {
+            node.content.jsonLd ||= []
+            node.content.jsonLd.push(key as Record<string, any>)
+          } else {
+            node.content[type] ||= new Map()
+            node.content[type]!.set(key as string, value!)
+          }
+        }
+
         elem.querySelectorAll('title').forEach(titleElem => {
-          node.content.standard!.title = escapeMarkdownCharacters(
-            titleElem.text,
+          setContent(
+            'standard',
+            'title',
+            escapeMarkdownCharacters(titleElem.text),
           )
         })
 
@@ -253,25 +265,19 @@ export function htmlToMarkdownAST(
 
           if (property?.startsWith('og:') && content) {
             if (options.includeMetaData === 'extended') {
-              node.content.openGraph![property.substring(3)] = content
+              setContent('openGraph', property.substring(3), content)
             }
           } else if (name?.startsWith('twitter:') && content) {
             if (options.includeMetaData === 'extended') {
-              node.content.twitter![name.substring(8)] = content
+              setContent('twitter', name.substring(8), content)
             }
           } else if (name && !nonSemanticTagNames.includes(name) && content) {
-            node.content.standard![name] = content
+            setContent('standard', name, content)
           }
         })
 
         // Extract JSON-LD data
         if (options.includeMetaData === 'extended') {
-          type JsonLdData = {
-            [key: string]: any
-          }
-
-          const jsonLdData: JsonLdData[] = []
-
           const jsonLDScripts = elem.querySelectorAll(
             'script[type="application/ld+json"]',
           )
@@ -280,15 +286,12 @@ export function htmlToMarkdownAST(
             try {
               const jsonContent = script.textContent
               if (jsonContent) {
-                const parsedData = JSON.parse(jsonContent)
-                jsonLdData.push(parsedData)
+                setContent('jsonLd', JSON.parse(jsonContent))
               }
             } catch (error) {
               console.error('Failed to parse JSON-LD', error)
             }
           })
-
-          node.content.jsonLd = jsonLdData
         }
         result.push(node)
       } else {
