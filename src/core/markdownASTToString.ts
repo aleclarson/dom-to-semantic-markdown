@@ -1,12 +1,13 @@
+import { findInMarkdownAST } from '../index'
 import type {
   ConversionOptions,
+  RenderOptions,
   SemanticMarkdownAST,
 } from '../types/markdownTypes'
-import { findInMarkdownAST } from '../index'
 
 export function markdownASTToString(
   nodes: SemanticMarkdownAST[],
-  options?: ConversionOptions,
+  options?: RenderOptions,
   indentLevel = 0,
 ): string {
   let markdownString = ''
@@ -17,12 +18,12 @@ export function markdownASTToString(
 
 function markdownMetaASTToString(
   nodes: SemanticMarkdownAST[],
-  options?: ConversionOptions,
+  options?: RenderOptions,
   indentLevel = 0,
 ): string {
   let markdownString = ''
 
-  if (options?.includeMetaData) {
+  if (options?.emitFrontMatter) {
     // include meta-data
     markdownString += '---\n'
     const node = findInMarkdownAST(nodes, _ => _.type === 'meta')
@@ -33,39 +34,39 @@ function markdownMetaASTToString(
         })
       }
 
-      if (options.includeMetaData === 'extended') {
-        if (node.content.openGraph) {
-          if (Object.keys(node.content.openGraph).length > 0) {
-            markdownString += 'openGraph:\n'
-            for (const [key, value] of Object.entries(node.content.openGraph)) {
-              markdownString += `  ${key}: "${value}"\n`
-            }
-          }
+      if (
+        node.content.openGraph &&
+        Object.keys(node.content.openGraph).length > 0
+      ) {
+        markdownString += 'openGraph:\n'
+        for (const [key, value] of Object.entries(node.content.openGraph)) {
+          markdownString += `  ${key}: "${value}"\n`
         }
+      }
 
-        if (node.content.twitter) {
-          if (Object.keys(node.content.twitter).length > 0) {
-            markdownString += 'twitter:\n'
-            for (const [key, value] of Object.entries(node.content.twitter)) {
-              markdownString += `  ${key}: "${value}"\n`
-            }
-          }
+      if (
+        node.content.twitter &&
+        Object.keys(node.content.twitter).length > 0
+      ) {
+        markdownString += 'twitter:\n'
+        for (const [key, value] of Object.entries(node.content.twitter)) {
+          markdownString += `  ${key}: "${value}"\n`
         }
+      }
 
-        if (node.content.jsonLd && node.content.jsonLd.length > 0) {
-          markdownString += 'schema:\n'
-          node.content.jsonLd.forEach(item => {
-            const {
-              '@context': jldContext,
-              '@type': jldType,
-              ...semanticData
-            } = item
-            markdownString += `  ${jldType ?? '(unknown type)'}:\n`
-            Object.keys(semanticData).forEach(key => {
-              markdownString += `    ${key}: ${JSON.stringify(semanticData[key])}\n`
-            })
+      if (node.content.jsonLd && node.content.jsonLd.length > 0) {
+        markdownString += 'schema:\n'
+        node.content.jsonLd.forEach(item => {
+          const {
+            '@context': jldContext,
+            '@type': jldType,
+            ...semanticData
+          } = item
+          markdownString += `  ${jldType ?? '(unknown type)'}:\n`
+          Object.keys(semanticData).forEach(key => {
+            markdownString += `    ${key}: ${JSON.stringify(semanticData[key])}\n`
           })
-        }
+        })
       }
     }
     markdownString += '---\n\n'

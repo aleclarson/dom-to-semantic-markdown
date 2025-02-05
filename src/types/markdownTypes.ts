@@ -129,7 +129,11 @@ export type SemanticMarkdownAST =
   | CustomNode
   | MetaDataNode
 
-export interface ConversionOptions {
+export interface ExtractOptions {
+  /**
+   * Enables debug logging during the conversion process.
+   */
+  debug?: boolean
   /**
    * The domain of the website, used to create relative links for images and links.
    */
@@ -139,21 +143,12 @@ export interface ConversionOptions {
    */
   extractMainContent?: boolean
   /**
-   * Whether to convert URLs to a shorter reference format.
+   * Controls whether to include metadata extracted from the HTML head.
+   * - `'basic'`: Includes standard meta tags like title, description, and keywords.
+   * - `'extended'`: Includes basic meta tags, Open Graph tags, Twitter Card tags, and JSON-LD data.
+   * - `false`: Disables metadata extraction.
    */
-  refifyUrls?: boolean
-  /**
-   * A map of URL references to their original values, generated when `refifyUrls` is enabled.
-   */
-  urlMap?: Record<string, string>
-  /**
-   * Enables debug logging during the conversion process.
-   */
-  debug?: boolean
-  /**
-   * Provides an override for the DOMParser object used to parse the HTML.
-   */
-  overrideDOMParser?: DOMParser
+  includeMetaData?: 'basic' | 'extended' | false
   /**
    * Enables adding correlational IDs to table cells in the Markdown output.
    */
@@ -174,6 +169,13 @@ export interface ConversionOptions {
     options: ConversionOptions,
     indentLevel: number,
   ) => SemanticMarkdownAST[] | undefined
+}
+
+export interface RenderOptions {
+  /**
+   * Include the metadata as “front matter” in the output.
+   */
+  emitFrontMatter?: boolean
   /**
    * Provides a function to override the default node rendering logic.
    */
@@ -190,11 +192,19 @@ export interface ConversionOptions {
     options: ConversionOptions,
     indentLevel: number,
   ) => string | undefined
+}
+
+export interface ConversionOptions extends ExtractOptions, RenderOptions {
   /**
-   * Controls whether to include metadata extracted from the HTML head.
-   * - `'basic'`: Includes standard meta tags like title, description, and keywords.
-   * - `'extended'`: Includes basic meta tags, Open Graph tags, Twitter Card tags, and JSON-LD data.
-   * - `false`: Disables metadata extraction.
+   * Whether to convert URLs to a shorter reference format.
    */
-  includeMetaData?: 'basic' | 'extended' | false
+  refifyUrls?: boolean
+  /**
+   * A map of URL references to their original values, generated when `refifyUrls` is enabled.
+   */
+  urlMap?: Record<string, string>
+  /**
+   * Provides an override for the DOMParser object used to parse the HTML.
+   */
+  overrideDOMParser?: DOMParser
 }

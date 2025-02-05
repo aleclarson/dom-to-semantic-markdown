@@ -1,5 +1,5 @@
 import type {
-  ConversionOptions,
+  ExtractOptions,
   MetaDataNode,
   SemanticMarkdownAST,
 } from '../types/markdownTypes'
@@ -7,7 +7,7 @@ import { _Node } from './ElementNode'
 
 export function htmlToMarkdownAST(
   element: Element,
-  options?: ConversionOptions,
+  options?: ExtractOptions,
   indentLevel = 0,
 ): SemanticMarkdownAST[] {
   const result: SemanticMarkdownAST[] = []
