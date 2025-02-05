@@ -238,8 +238,8 @@ export function htmlToMarkdownAST(
             node.content.jsonLd ||= []
             node.content.jsonLd.push(key as Record<string, any>)
           } else {
-            node.content[type] ||= new Map()
-            node.content[type]!.set(key as string, value!)
+            node.content[type] ||= Object.create(null)
+            node.content[type]![key as string] = value!
           }
         }
 

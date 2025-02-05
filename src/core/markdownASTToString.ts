@@ -25,22 +25,24 @@ function markdownMetaASTToString(
   if (options?.emitFrontMatter) {
     const node = findInMarkdownAST(nodes, _ => _.type === 'meta')
     if (node?.type === 'meta') {
-      node.content.standard?.forEach((value, key) => {
-        markdownString += `${key}: ${JSON.stringify(value)}\n`
-      })
+      if (node.content.standard) {
+        Object.entries(node.content.standard).forEach(([key, value]) => {
+          markdownString += `${key}: ${JSON.stringify(value)}\n`
+        })
+      }
 
       if (node.content.openGraph) {
         markdownString += 'openGraph:\n'
-        for (const [key, value] of node.content.openGraph) {
+        Object.entries(node.content.openGraph).forEach(([key, value]) => {
           markdownString += `  ${key}: ${JSON.stringify(value)}\n`
-        }
+        })
       }
 
       if (node.content.twitter) {
         markdownString += 'twitter:\n'
-        for (const [key, value] of node.content.twitter) {
+        Object.entries(node.content.twitter).forEach(([key, value]) => {
           markdownString += `  ${key}: ${JSON.stringify(value)}\n`
-        }
+        })
       }
 
       if (node.content.jsonLd) {

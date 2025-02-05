@@ -109,15 +109,15 @@ export declare namespace SemanticMarkdownAST {
       /**
        * Standard meta tags (key-value pairs)
        */
-      standard?: Map<string, string>
+      standard?: Record<string, string>
       /**
        * Open Graph tags (key-value pairs)
        */
-      openGraph?: Map<string, string>
+      openGraph?: Record<string, string>
       /**
        * Twitter Card tags (key-value pairs)
        */
-      twitter?: Map<string, string>
+      twitter?: Record<string, string>
       /**
        * JSON-LD data
        */
