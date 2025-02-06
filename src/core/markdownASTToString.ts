@@ -117,7 +117,11 @@ function markdownContentASTToString(
           }
 
           if (node.type === 'text') {
-            markdownString += `${indent}${content}`
+            const currentLine = getLastLine(markdownString)
+            if (currentLine.length === 0) {
+              markdownString += indent
+            }
+            markdownString += content
           } else {
             if (node.type === 'bold') {
               markdownString += `**${content}**`
@@ -307,4 +311,9 @@ function markdownContentASTToString(
   })
 
   return markdownString
+}
+
+function getLastLine(markdownString: string) {
+  const lastNewlineIndex = markdownString.lastIndexOf('\n')
+  return markdownString.slice(lastNewlineIndex + 1)
 }
