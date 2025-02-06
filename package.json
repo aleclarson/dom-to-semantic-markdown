@@ -1,6 +1,6 @@
 {
   "name": "@alloc/dom-to-semantic-markdown",
-  "version": "1.2.16",
+  "version": "2.0.0",
   "description": "DOM to Semantic-Markdown for use in LLMs",
   "type": "module",
   "repository": {
@@ -36,6 +36,8 @@
     "tsup": "^8.3.6",
     "typescript": "^5.6.3"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "keywords": []
 }
