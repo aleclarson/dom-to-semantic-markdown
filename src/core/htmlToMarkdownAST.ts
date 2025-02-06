@@ -403,6 +403,21 @@ export function htmlToMarkdownAST(
         return
       }
 
+      if (tagName !== 'li' && role === 'listitem') {
+        const content = htmlToMarkdownAST(child, options, indentLevel + 1)
+        if (content.length) {
+          const prevSibling = result.at(-1)
+          if (prevSibling !== lineBreak && prevSibling !== contentBreak) {
+            result.push(lineBreak)
+          }
+          if (isInlineMarkdown(content[0])) {
+            result.push({ type: 'text', content: '-' })
+          }
+          result.push(...content)
+        }
+        return
+      }
+
       const translator = translators[
         tagName as keyof typeof translators
       ] as ElementTranslator<any>
@@ -449,4 +464,15 @@ function isElementVisible(element: Element) {
   }
   // SVG elements are visible, I guess.
   return true
+}
+
+function isInlineMarkdown(node: MarkdownNode) {
+  return (
+    node.type === 'text' ||
+    node.type === 'link' ||
+    node.type === 'bold' ||
+    node.type === 'italic' ||
+    node.type === 'strikethrough' ||
+    (node.type === 'code' && node.inline)
+  )
 }
