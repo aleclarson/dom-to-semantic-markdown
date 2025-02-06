@@ -145,10 +145,6 @@ export declare namespace SemanticMarkdownAST {
 
 export interface ExtractOptions {
   /**
-   * Enables debug logging during the conversion process.
-   */
-  debug?: boolean
-  /**
    * The domain of the website, used to create relative links for images and links.
    */
   websiteDomain?: string

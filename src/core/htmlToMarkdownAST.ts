@@ -1,15 +1,317 @@
 import type {
   ExtractOptions,
   Node as MarkdownNode,
+  SemanticMarkdownAST,
 } from '../types/markdownTypes'
 import { escapeMarkdownCharacters } from './domUtils'
 import { _Node } from './ElementNode'
 import { extractMetaData } from './extractMetaData'
 
+const noop = () => {}
+
 const paragraphBreak: MarkdownNode = Object.freeze({
   type: 'text',
   content: '\n\n',
 })
+
+type ElementTranslator<T extends keyof HTMLElementTagNameMap> = (
+  element: HTMLElementTagNameMap[T],
+  result: MarkdownNode[],
+  options: ExtractOptions | undefined,
+  indentLevel: number,
+) => void
+
+const headingTranslator: ElementTranslator<
+  'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+> = (headingNode, result, options) => {
+  const level = Number.parseInt(
+    headingNode.tagName.substring(1),
+  ) as SemanticMarkdownAST.HeadingNode['level']
+
+  result.push({
+    type: 'heading',
+    level,
+    content: htmlToMarkdownAST(headingNode, options),
+  })
+}
+
+const listTranslator: ElementTranslator<'ul' | 'ol'> = (
+  listNode,
+  result,
+  options,
+  indentLevel,
+) => {
+  result.push({
+    type: 'list',
+    ordered: listNode.tagName === 'OL',
+    items: Array.from(listNode.children).map(li => ({
+      type: 'listItem',
+      content: htmlToMarkdownAST(li, options, indentLevel + 1),
+    })),
+  })
+}
+
+const semanticHtmlTranslator: ElementTranslator<any> = (
+  element: Element,
+  result,
+  options,
+) => {
+  result.push({
+    type: 'semanticHtml',
+    htmlType: element.tagName.toLowerCase() as any,
+    content: htmlToMarkdownAST(element, options),
+  })
+}
+
+const formattingTagMap = {
+  strong: 'bold',
+  b: 'bold',
+  em: 'italic',
+  i: 'italic',
+  s: 'strikethrough',
+} as const
+
+const formattingTranslator: ElementTranslator<keyof typeof formattingTagMap> = (
+  element,
+  result,
+  options,
+  indentLevel,
+) => {
+  if (element.textContent?.trim()) {
+    const key = element.tagName.toLowerCase() as keyof typeof formattingTagMap
+    result.push({
+      type: formattingTagMap[key],
+      content: htmlToMarkdownAST(element, options, indentLevel + 1),
+    })
+  }
+}
+
+type ElementTranslatorMap = {
+  [K in keyof HTMLElementTagNameMap]?: ElementTranslator<K>
+}
+
+const translators: ElementTranslatorMap = {
+  // Paragraphs
+  p(paragraphNode, result, options) {
+    result.push(...htmlToMarkdownAST(paragraphNode, options))
+    // Add a new line after the paragraph
+    result.push(paragraphBreak)
+  },
+
+  // Links
+  a(linkNode, result, options) {
+    // Check if the href is a data URL for an image
+    if (
+      typeof linkNode.href === 'string' &&
+      linkNode.href.startsWith('data:image')
+    ) {
+      // If it's a data URL for an image, skip this link
+      result.push({
+        type: 'link',
+        href: '-',
+        content: htmlToMarkdownAST(linkNode, options),
+      })
+    } else {
+      // Process the link as usual
+      let href = linkNode.href
+      if (typeof href === 'string') {
+        href =
+          options?.websiteDomain && href.startsWith(options.websiteDomain)
+            ? href.substring(options.websiteDomain.length)
+            : href
+      } else {
+        href = '#' // Use a default value when href is not a string
+      }
+      // if all children are text,
+      if (
+        Array.from(linkNode.childNodes).every(
+          _ => _.nodeType === _Node.TEXT_NODE,
+        )
+      ) {
+        result.push({
+          type: 'link',
+          href: href,
+          content: [
+            { type: 'text', content: linkNode.textContent?.trim() ?? '' },
+          ],
+        })
+      } else {
+        result.push({
+          type: 'link',
+          href: href,
+          content: htmlToMarkdownAST(linkNode, options),
+        })
+      }
+    }
+  },
+
+  // Images
+  img(imageNode, result, options) {
+    if (imageNode.src?.startsWith('data:image')) {
+      result.push({
+        type: 'image',
+        src: '-',
+        alt: escapeMarkdownCharacters(imageNode.alt),
+      })
+    } else {
+      const src =
+        options?.websiteDomain &&
+        imageNode.src?.startsWith(options.websiteDomain)
+          ? imageNode.src?.substring(options.websiteDomain.length)
+          : imageNode.src
+
+      result.push({
+        type: 'image',
+        src,
+        alt: escapeMarkdownCharacters(imageNode.alt),
+      })
+    }
+  },
+
+  // Videos
+  video(videoNode, result) {
+    result.push({
+      type: 'video',
+      src: videoNode.src,
+      poster: escapeMarkdownCharacters(videoNode.poster),
+      controls: videoNode.controls,
+    })
+  },
+
+  // Line breaks
+  br(_, result) {
+    result.push({ type: 'text', content: '\n' })
+  },
+
+  // Tables
+  table(tableNode, result, options, indentLevel) {
+    const colIds: string[] = []
+
+    if (options?.enableTableColumnTracking) {
+      // Generate unique column IDs
+      const headerCells = Array.from(tableNode.querySelectorAll('th, td'))
+      headerCells.forEach((_, index) => {
+        colIds.push(`col-${index}`)
+      })
+    }
+
+    const tableRows = Array.from(tableNode.querySelectorAll('tr'))
+    const markdownTableRows = tableRows.map(row => {
+      let columnIndex = 0
+      const cells = Array.from(row.querySelectorAll('th, td')).map(cell => {
+        const colspan = Number.parseInt(cell.getAttribute('colspan') || '1', 10)
+        const rowspan = Number.parseInt(cell.getAttribute('rowspan') || '1', 10)
+        const cellNode = {
+          type: 'tableCell' as const,
+          content:
+            cell.nodeType === _Node.TEXT_NODE
+              ? escapeMarkdownCharacters(cell.textContent?.trim() ?? '')
+              : htmlToMarkdownAST(cell, options, indentLevel + 1),
+          colId: colIds[columnIndex] as string | undefined,
+          colspan: colspan > 1 ? colspan : undefined,
+          rowspan: rowspan > 1 ? rowspan : undefined,
+        }
+        columnIndex += colspan
+        return cellNode
+      })
+      return { type: 'tableRow' as const, cells }
+    })
+
+    if (markdownTableRows.length > 0) {
+      // Check if the first row contains header cells
+      const hasHeaders = tableRows[0].querySelector('th') !== null
+      if (hasHeaders) {
+        // Create a header separator row
+        const headerSeparatorCells = Array.from(
+          tableRows[0].querySelectorAll('th, td'),
+        ).map(() => ({
+          type: 'tableCell' as const,
+          content: '---',
+          colId: undefined,
+          colspan: undefined,
+          rowspan: undefined,
+        }))
+        const headerSeparatorRow = {
+          type: 'tableRow' as const,
+          cells: headerSeparatorCells,
+        }
+        markdownTableRows.splice(1, 0, headerSeparatorRow)
+      }
+    }
+
+    result.push({ type: 'table', rows: markdownTableRows, colIds })
+  },
+
+  // Quotations
+  blockquote(quoteNode, result, options) {
+    result.push({
+      type: 'blockquote',
+      content: htmlToMarkdownAST(quoteNode, options),
+    })
+  },
+
+  // Code blocks
+  code(codeNode, result) {
+    const content = codeNode.textContent?.trim()
+    if (!content) {
+      return
+    }
+    let language: string | undefined
+    for (const className of codeNode.classList.values()) {
+      if (className.startsWith('language-')) {
+        language = className.replace('language-', '')
+        break
+      }
+    }
+    result.push({
+      type: 'code',
+      content,
+      language,
+      // Handling inline code differently
+      inline: codeNode.parentNode?.nodeName !== 'PRE',
+    })
+  },
+
+  // Headings
+  h1: headingTranslator,
+  h2: headingTranslator,
+  h3: headingTranslator,
+  h4: headingTranslator,
+  h5: headingTranslator,
+  h6: headingTranslator,
+
+  // Lists
+  ul: listTranslator,
+  ol: listTranslator,
+
+  // Text formatting
+  strong: formattingTranslator,
+  b: formattingTranslator,
+  em: formattingTranslator,
+  i: formattingTranslator,
+  s: formattingTranslator,
+
+  // Semantic HTML elements
+  article: semanticHtmlTranslator,
+  aside: semanticHtmlTranslator,
+  details: semanticHtmlTranslator,
+  figcaption: semanticHtmlTranslator,
+  figure: semanticHtmlTranslator,
+  footer: semanticHtmlTranslator,
+  header: semanticHtmlTranslator,
+  main: semanticHtmlTranslator,
+  mark: semanticHtmlTranslator,
+  nav: semanticHtmlTranslator,
+  section: semanticHtmlTranslator,
+  summary: semanticHtmlTranslator,
+  time: semanticHtmlTranslator,
+
+  // Ignored elements
+  noscript: noop,
+  script: noop,
+  style: noop,
+  html: noop,
+}
 
 export function htmlToMarkdownAST(
   element: Element,
@@ -17,7 +319,6 @@ export function htmlToMarkdownAST(
   indentLevel = 0,
 ): MarkdownNode[] {
   const result: MarkdownNode[] = []
-  const debugLog = options?.debug ? console.log : () => {}
 
   const processChild = (child: Node) => {
     if (isTextNode(child)) {
@@ -25,7 +326,6 @@ export function htmlToMarkdownAST(
         child.textContent?.trim() ?? '',
       )
       if (textContent) {
-        debugLog(`Text Node: '${textContent}'`)
         result.push({
           type: 'text',
           content: textContent,
@@ -45,302 +345,44 @@ export function htmlToMarkdownAST(
       indentLevel,
     )
     if (overrideResult !== undefined) {
-      debugLog(`Element Processing Overridden: '${child.nodeType}'`)
       if (overrideResult !== false) {
         result.push(...overrideResult)
       }
     } else {
       const tagName = child.tagName.toLowerCase()
+
       if (options?.excludeTagNames?.includes(tagName)) {
         return
       }
-      if (tagName === 'head' && !!options?.includeMetaData) {
+
+      if (options?.includeMetaData && tagName === 'head') {
         const metaData = extractMetaData(child, options.includeMetaData)
         result.push({ type: 'meta', content: metaData })
         return
       }
+
       if (options?.excludeInvisibleElements && !isElementVisible(child)) {
         return
       }
-      if (/^h[1-6]$/.test(tagName)) {
-        const level = Number.parseInt(tagName.substring(1)) as
-          | 1
-          | 2
-          | 3
-          | 4
-          | 5
-          | 6
-        debugLog(`Heading ${level}`)
-        result.push({
-          type: 'heading',
-          level,
-          content: htmlToMarkdownAST(child, options), // Process child elements
-        })
-      } else if (tagName === 'p') {
-        debugLog('Paragraph')
-        result.push(...htmlToMarkdownAST(child, options))
-        // Add a new line after the paragraph
-        result.push(paragraphBreak)
-      } else if (tagName === 'a') {
-        debugLog(
-          `Link: '${(child as HTMLAnchorElement).href}' with text '${child.textContent}'`,
-        )
-        // Check if the href is a data URL for an image
-        if (
-          typeof (child as HTMLAnchorElement).href === 'string' &&
-          (child as HTMLAnchorElement).href.startsWith('data:image')
-        ) {
-          // If it's a data URL for an image, skip this link
-          result.push({
-            type: 'link',
-            href: '-',
-            content: htmlToMarkdownAST(child, options),
-          })
-        } else {
-          // Process the link as usual
-          let href = (child as HTMLAnchorElement).href
-          if (typeof href === 'string') {
-            href =
-              options?.websiteDomain && href.startsWith(options.websiteDomain)
-                ? href.substring(options.websiteDomain.length)
-                : href
-          } else {
-            href = '#' // Use a default value when href is not a string
-          }
-          // if all children are text,
-          if (
-            Array.from(child.childNodes).every(
-              _ => _.nodeType === _Node.TEXT_NODE,
-            )
-          ) {
-            result.push({
-              type: 'link',
-              href: href,
-              content: [
-                { type: 'text', content: child.textContent?.trim() ?? '' },
-              ],
-            })
-          } else {
-            result.push({
-              type: 'link',
-              href: href,
-              content: htmlToMarkdownAST(child, options),
-            })
-          }
-        }
-      } else if (tagName === 'img') {
-        debugLog(
-          `Image: src='${(child as HTMLImageElement).src}', alt='${(child as HTMLImageElement).alt}'`,
-        )
-        if ((child as HTMLImageElement).src?.startsWith('data:image')) {
-          result.push({
-            type: 'image',
-            src: '-',
-            alt: escapeMarkdownCharacters((child as HTMLImageElement).alt),
-          })
-        } else {
-          const src =
-            options?.websiteDomain &&
-            (child as HTMLImageElement).src?.startsWith(options.websiteDomain)
-              ? (child as HTMLImageElement).src?.substring(
-                  options.websiteDomain.length,
-                )
-              : (child as HTMLImageElement).src
-          result.push({
-            type: 'image',
-            src,
-            alt: escapeMarkdownCharacters((child as HTMLImageElement).alt),
-          })
-        }
-      } else if (tagName === 'video') {
-        debugLog(
-          `Video: src='${(child as HTMLVideoElement).src}', poster='${(child as HTMLVideoElement).poster}', controls='${(child as HTMLVideoElement).controls}'`,
-        )
-        result.push({
-          type: 'video',
-          src: (child as HTMLVideoElement).src,
-          poster: escapeMarkdownCharacters((child as HTMLVideoElement).poster),
-          controls: (child as HTMLVideoElement).controls,
-        })
-      } else if (tagName === 'ul' || tagName === 'ol') {
-        debugLog(`${tagName === 'ul' ? 'Unordered' : 'Ordered'} List`)
-        result.push({
-          type: 'list',
-          ordered: tagName === 'ol',
-          items: Array.from(child.children).map(li => ({
-            type: 'listItem',
-            content: htmlToMarkdownAST(li, options, indentLevel + 1),
-          })),
-        })
-      } else if (tagName === 'br') {
-        debugLog('Line Break')
-        result.push({ type: 'text', content: '\n' })
-      } else if (tagName === 'table') {
-        debugLog('Table')
 
-        const colIds: string[] = []
+      const translator = translators[
+        tagName as keyof typeof translators
+      ] as ElementTranslator<any>
 
-        if (options?.enableTableColumnTracking) {
-          // Generate unique column IDs
-          const headerCells = Array.from(child.querySelectorAll('th, td'))
-          headerCells.forEach((_, index) => {
-            colIds.push(`col-${index}`)
-          })
-        }
+      if (translator) {
+        translator(child, result, options, indentLevel)
+        return
+      }
 
-        const tableRows = Array.from(child.querySelectorAll('tr'))
-        const markdownTableRows = tableRows.map(row => {
-          let columnIndex = 0
-          const cells = Array.from(row.querySelectorAll('th, td')).map(cell => {
-            const colspan = Number.parseInt(
-              cell.getAttribute('colspan') || '1',
-              10,
-            )
-            const rowspan = Number.parseInt(
-              cell.getAttribute('rowspan') || '1',
-              10,
-            )
-            const cellNode = {
-              type: 'tableCell' as const,
-              content:
-                cell.nodeType === _Node.TEXT_NODE
-                  ? escapeMarkdownCharacters(cell.textContent?.trim() ?? '')
-                  : htmlToMarkdownAST(cell, options, indentLevel + 1),
-              colId: colIds[columnIndex] as string | undefined,
-              colspan: colspan > 1 ? colspan : undefined,
-              rowspan: rowspan > 1 ? rowspan : undefined,
-            }
-            columnIndex += colspan
-            return cellNode
-          })
-          return { type: 'tableRow' as const, cells }
-        })
-
-        if (markdownTableRows.length > 0) {
-          // Check if the first row contains header cells
-          const hasHeaders = tableRows[0].querySelector('th') !== null
-          if (hasHeaders) {
-            // Create a header separator row
-            const headerSeparatorCells = Array.from(
-              tableRows[0].querySelectorAll('th, td'),
-            ).map(() => ({
-              type: 'tableCell' as const,
-              content: '---',
-              colId: undefined,
-              colspan: undefined,
-              rowspan: undefined,
-            }))
-            const headerSeparatorRow = {
-              type: 'tableRow' as const,
-              cells: headerSeparatorCells,
-            }
-            markdownTableRows.splice(1, 0, headerSeparatorRow)
-          }
-        }
-
-        result.push({ type: 'table', rows: markdownTableRows, colIds })
+      const unhandledElementProcessing = options?.processUnhandledElement?.(
+        child,
+        options,
+        indentLevel,
+      )
+      if (unhandledElementProcessing) {
+        result.push(...unhandledElementProcessing)
       } else {
-        const content = escapeMarkdownCharacters(child.textContent || '')
-        switch (tagName) {
-          case 'noscript':
-          case 'script':
-          case 'style':
-          case 'html':
-            // blackhole..
-            break
-          case 'strong':
-          case 'b':
-            if (content) {
-              debugLog(`Bold: '${content}'`)
-              result.push({
-                type: 'bold',
-                content: htmlToMarkdownAST(child, options, indentLevel + 1),
-              })
-            }
-            break
-          case 'em':
-          case 'i':
-            if (content) {
-              debugLog(`Italic: '${content}'`)
-              result.push({
-                type: 'italic',
-                content: htmlToMarkdownAST(child, options, indentLevel + 1),
-              })
-            }
-            break
-          case 's':
-          case 'strike':
-            if (content) {
-              debugLog(`Strikethrough: '${content}'`)
-              result.push({
-                type: 'strikethrough',
-                content: htmlToMarkdownAST(child, options, indentLevel + 1),
-              })
-            }
-            break
-          case 'code':
-            if (content) {
-              // Handling inline code differently
-              const isCodeBlock =
-                child.parentNode &&
-                child.parentNode.nodeName.toLowerCase() === 'pre'
-              debugLog(
-                `${isCodeBlock ? 'Code Block' : 'Inline Code'}: '${content}'`,
-              )
-              const languageClass = child.className
-                ?.split(' ')
-                .find(cls => cls.startsWith('language-'))
-              const language = languageClass
-                ? languageClass.replace('language-', '')
-                : ''
-              result.push({
-                type: 'code',
-                content: child.textContent?.trim() ?? '',
-                language,
-                inline: !isCodeBlock,
-              })
-            }
-            break
-          case 'blockquote':
-            debugLog('Blockquote')
-            result.push({
-              type: 'blockquote',
-              content: htmlToMarkdownAST(child, options),
-            })
-            break
-          case 'article':
-          case 'aside':
-          case 'details':
-          case 'figcaption':
-          case 'figure':
-          case 'footer':
-          case 'header':
-          case 'main':
-          case 'mark':
-          case 'nav':
-          case 'section':
-          case 'summary':
-          case 'time':
-            debugLog(`Semantic HTML Element: '${child.tagName}'`)
-            result.push({
-              type: 'semanticHtml',
-              htmlType: tagName as any,
-              content: htmlToMarkdownAST(child, options),
-            })
-            break
-          default: {
-            const unhandledElementProcessing =
-              options?.processUnhandledElement?.(child, options, indentLevel)
-            if (unhandledElementProcessing) {
-              debugLog(`Processing Unhandled Element: '${child.tagName}'`)
-              result.push(...unhandledElementProcessing)
-            } else {
-              debugLog(`Generic HTMLElement: '${child.tagName}'`)
-              result.push(...htmlToMarkdownAST(child, options, indentLevel + 1))
-            }
-            break
-          }
-        }
+        result.push(...htmlToMarkdownAST(child, options, indentLevel + 1))
       }
     }
   }
