@@ -39,14 +39,16 @@ export function htmlToMarkdownAST(
     if (isSlotElement(child)) {
       return child.assignedNodes().forEach(processChild)
     }
-    const overriddenElementProcessing = options?.overrideElementProcessing?.(
+    const overrideResult = options?.overrideElementProcessing?.(
       child,
       options,
       indentLevel,
     )
-    if (overriddenElementProcessing) {
+    if (overrideResult !== undefined) {
       debugLog(`Element Processing Overridden: '${child.nodeType}'`)
-      result.push(...overriddenElementProcessing)
+      if (overrideResult !== false) {
+        result.push(...overrideResult)
+      }
     } else {
       if (options?.excludeTagNames?.includes(child.tagName.toLowerCase())) {
         return

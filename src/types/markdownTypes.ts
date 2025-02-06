@@ -178,7 +178,7 @@ export interface ExtractOptions {
     element: Element,
     options: ConversionOptions,
     indentLevel: number,
-  ) => Node[] | undefined
+  ) => Node[] | false | undefined
   /**
    * Provides a function to process unhandled HTML elements.
    */
