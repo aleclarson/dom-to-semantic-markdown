@@ -73,9 +73,9 @@ function markdownContentASTToString(
 ): string {
   let markdownString = ''
 
-  nodes.forEach(node => {
-    const indent = ' '.repeat(indentLevel * 2) // Adjust the multiplier for different indent sizes
+  const indent = ' '.repeat(indentLevel * 2) // Adjust the multiplier for different indent sizes
 
+  nodes.forEach(node => {
     const nodeRenderingOverride = options?.overrideNodeRenderer?.(
       node,
       options,
