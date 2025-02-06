@@ -1,19 +1,25 @@
-import type { ExtractOptions, Node } from '../types/markdownTypes'
+import type {
+  ExtractOptions,
+  Node as MarkdownNode,
+} from '../types/markdownTypes'
 import { escapeMarkdownCharacters } from './domUtils'
 import { _Node } from './ElementNode'
 import { extractMetaData } from './extractMetaData'
 
-const paragraphBreak: Node = Object.freeze({ type: 'text', content: '\n\n' })
+const paragraphBreak: MarkdownNode = Object.freeze({
+  type: 'text',
+  content: '\n\n',
+})
 
 export function htmlToMarkdownAST(
   element: Element,
   options?: ExtractOptions,
   indentLevel = 0,
-): Node[] {
-  const result: Node[] = []
+): MarkdownNode[] {
+  const result: MarkdownNode[] = []
   const debugLog = options?.debug ? console.log : () => {}
 
-  const processChild = (child: globalThis.Node) => {
+  const processChild = (child: Node) => {
     if (isTextNode(child)) {
       const textContent = escapeMarkdownCharacters(
         child.textContent?.trim() ?? '',
@@ -350,16 +356,16 @@ export function htmlToMarkdownAST(
   return result
 }
 
-function isTextNode(node: globalThis.Node): node is Text {
+function isTextNode(node: Node): node is Text {
   return node.nodeType === _Node.TEXT_NODE
 }
 
-function isElement(node: globalThis.Node): node is Element {
+function isElement(node: Node): node is Element {
   return node.nodeType === _Node.ELEMENT_NODE
 }
 
-function isSlotElement(node: globalThis.Node): node is HTMLSlotElement {
-  return isElement(node) && node.tagName === 'SLOT'
+function isSlotElement(element: Element): element is HTMLSlotElement {
+  return element.tagName === 'SLOT'
 }
 
 function isElementVisible(element: Element) {
