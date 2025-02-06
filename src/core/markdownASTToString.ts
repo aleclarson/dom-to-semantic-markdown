@@ -100,7 +100,7 @@ function markdownContentASTToString(
           }
 
           const isMarkdownStringNotEmpty = markdownString.length > 0
-          const isFirstCharOfContentWhitespace = /\s/.test(content.slice(0, 1))
+          const isFirstCharOfContentWhitespace = /\s/.test(content.charAt(0))
           const isLastCharOfMarkdownWhitespace = /\s/.test(
             markdownString.slice(-1),
           )
