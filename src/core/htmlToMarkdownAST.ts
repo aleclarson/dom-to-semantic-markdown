@@ -183,6 +183,11 @@ const translators: ElementTranslatorMap = {
     result.push({ type: 'text', content: '\n' })
   },
 
+  // Content breaks
+  hr(_, result) {
+    result.push({ type: 'text', content: '\n\n' })
+  },
+
   // Tables
   table(tableNode, result, options, indentLevel) {
     const colIds: string[] = []
