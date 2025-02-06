@@ -13,39 +13,51 @@ export function htmlToMarkdownAST(
   const result: Node[] = []
   const debugLog = options?.debug ? console.log : () => {}
 
-  element.childNodes.forEach(childElement => {
+  const processChild = (child: globalThis.Node) => {
+    if (isTextNode(child)) {
+      const textContent = escapeMarkdownCharacters(
+        child.textContent?.trim() ?? '',
+      )
+      if (textContent) {
+        debugLog(`Text Node: '${textContent}'`)
+        result.push({
+          type: 'text',
+          content: textContent,
+        })
+      }
+      return
+    }
+    if (!isElement(child)) {
+      return
+    }
+    if (isSlotElement(child)) {
+      return child.assignedNodes().forEach(processChild)
+    }
     const overriddenElementProcessing = options?.overrideElementProcessing?.(
-      childElement as Element,
+      child,
       options,
       indentLevel,
     )
     if (overriddenElementProcessing) {
-      debugLog(`Element Processing Overridden: '${childElement.nodeType}'`)
+      debugLog(`Element Processing Overridden: '${child.nodeType}'`)
       result.push(...overriddenElementProcessing)
-    } else if (childElement.nodeType === _Node.TEXT_NODE) {
-      const textContent = escapeMarkdownCharacters(
-        childElement.textContent?.trim() ?? '',
-      )
-      if (textContent && !!childElement.textContent) {
-        debugLog(`Text Node: '${textContent}'`)
-        // preserve whitespaces when text childElement is not empty
-        result.push({ type: 'text', content: childElement.textContent?.trim() })
-      }
-    } else if (childElement.nodeType === _Node.ELEMENT_NODE) {
-      const elem = childElement as Element
-      if (options?.excludeTagNames?.includes(elem.tagName.toLowerCase())) {
+    } else {
+      if (options?.excludeTagNames?.includes(child.tagName.toLowerCase())) {
         return
       }
-      if (elem.tagName.toLowerCase() === 'head' && !!options?.includeMetaData) {
-        const metaData = extractMetaData(elem, options.includeMetaData)
+      if (
+        child.tagName.toLowerCase() === 'head' &&
+        !!options?.includeMetaData
+      ) {
+        const metaData = extractMetaData(child, options.includeMetaData)
         result.push({ type: 'meta', content: metaData })
         return
       }
-      if (options?.excludeInvisibleElements && !isElementVisible(elem)) {
+      if (options?.excludeInvisibleElements && !isElementVisible(child)) {
         return
       }
-      if (/^h[1-6]$/i.test(elem.tagName)) {
-        const level = Number.parseInt(elem.tagName.substring(1)) as
+      if (/^h[1-6]$/i.test(child.tagName)) {
+        const level = Number.parseInt(child.tagName.substring(1)) as
           | 1
           | 2
           | 3
@@ -56,31 +68,31 @@ export function htmlToMarkdownAST(
         result.push({
           type: 'heading',
           level,
-          content: htmlToMarkdownAST(elem, options), // Process child elements
+          content: htmlToMarkdownAST(child, options), // Process child elements
         })
-      } else if (elem.tagName.toLowerCase() === 'p') {
+      } else if (child.tagName.toLowerCase() === 'p') {
         debugLog('Paragraph')
-        result.push(...htmlToMarkdownAST(elem, options))
+        result.push(...htmlToMarkdownAST(child, options))
         // Add a new line after the paragraph
         result.push(paragraphBreak)
-      } else if (elem.tagName.toLowerCase() === 'a') {
+      } else if (child.tagName.toLowerCase() === 'a') {
         debugLog(
-          `Link: '${(elem as HTMLAnchorElement).href}' with text '${elem.textContent}'`,
+          `Link: '${(child as HTMLAnchorElement).href}' with text '${child.textContent}'`,
         )
         // Check if the href is a data URL for an image
         if (
-          typeof (elem as HTMLAnchorElement).href === 'string' &&
-          (elem as HTMLAnchorElement).href.startsWith('data:image')
+          typeof (child as HTMLAnchorElement).href === 'string' &&
+          (child as HTMLAnchorElement).href.startsWith('data:image')
         ) {
           // If it's a data URL for an image, skip this link
           result.push({
             type: 'link',
             href: '-',
-            content: htmlToMarkdownAST(elem, options),
+            content: htmlToMarkdownAST(child, options),
           })
         } else {
           // Process the link as usual
-          let href = (elem as HTMLAnchorElement).href
+          let href = (child as HTMLAnchorElement).href
           if (typeof href === 'string') {
             href =
               options?.websiteDomain && href.startsWith(options.websiteDomain)
@@ -91,7 +103,7 @@ export function htmlToMarkdownAST(
           }
           // if all children are text,
           if (
-            Array.from(elem.childNodes).every(
+            Array.from(child.childNodes).every(
               _ => _.nodeType === _Node.TEXT_NODE,
             )
           ) {
@@ -99,83 +111,83 @@ export function htmlToMarkdownAST(
               type: 'link',
               href: href,
               content: [
-                { type: 'text', content: elem.textContent?.trim() ?? '' },
+                { type: 'text', content: child.textContent?.trim() ?? '' },
               ],
             })
           } else {
             result.push({
               type: 'link',
               href: href,
-              content: htmlToMarkdownAST(elem, options),
+              content: htmlToMarkdownAST(child, options),
             })
           }
         }
-      } else if (elem.tagName.toLowerCase() === 'img') {
+      } else if (child.tagName.toLowerCase() === 'img') {
         debugLog(
-          `Image: src='${(elem as HTMLImageElement).src}', alt='${(elem as HTMLImageElement).alt}'`,
+          `Image: src='${(child as HTMLImageElement).src}', alt='${(child as HTMLImageElement).alt}'`,
         )
-        if ((elem as HTMLImageElement).src?.startsWith('data:image')) {
+        if ((child as HTMLImageElement).src?.startsWith('data:image')) {
           result.push({
             type: 'image',
             src: '-',
-            alt: escapeMarkdownCharacters((elem as HTMLImageElement).alt),
+            alt: escapeMarkdownCharacters((child as HTMLImageElement).alt),
           })
         } else {
           const src =
             options?.websiteDomain &&
-            (elem as HTMLImageElement).src?.startsWith(options.websiteDomain)
-              ? (elem as HTMLImageElement).src?.substring(
+            (child as HTMLImageElement).src?.startsWith(options.websiteDomain)
+              ? (child as HTMLImageElement).src?.substring(
                   options.websiteDomain.length,
                 )
-              : (elem as HTMLImageElement).src
+              : (child as HTMLImageElement).src
           result.push({
             type: 'image',
             src,
-            alt: escapeMarkdownCharacters((elem as HTMLImageElement).alt),
+            alt: escapeMarkdownCharacters((child as HTMLImageElement).alt),
           })
         }
-      } else if (elem.tagName.toLowerCase() === 'video') {
+      } else if (child.tagName.toLowerCase() === 'video') {
         debugLog(
-          `Video: src='${(elem as HTMLVideoElement).src}', poster='${(elem as HTMLVideoElement).poster}', controls='${(elem as HTMLVideoElement).controls}'`,
+          `Video: src='${(child as HTMLVideoElement).src}', poster='${(child as HTMLVideoElement).poster}', controls='${(child as HTMLVideoElement).controls}'`,
         )
         result.push({
           type: 'video',
-          src: (elem as HTMLVideoElement).src,
-          poster: escapeMarkdownCharacters((elem as HTMLVideoElement).poster),
-          controls: (elem as HTMLVideoElement).controls,
+          src: (child as HTMLVideoElement).src,
+          poster: escapeMarkdownCharacters((child as HTMLVideoElement).poster),
+          controls: (child as HTMLVideoElement).controls,
         })
       } else if (
-        elem.tagName.toLowerCase() === 'ul' ||
-        elem.tagName.toLowerCase() === 'ol'
+        child.tagName.toLowerCase() === 'ul' ||
+        child.tagName.toLowerCase() === 'ol'
       ) {
         debugLog(
-          `${elem.tagName.toLowerCase() === 'ul' ? 'Unordered' : 'Ordered'} List`,
+          `${child.tagName.toLowerCase() === 'ul' ? 'Unordered' : 'Ordered'} List`,
         )
         result.push({
           type: 'list',
-          ordered: elem.tagName.toLowerCase() === 'ol',
-          items: Array.from(elem.children).map(li => ({
+          ordered: child.tagName.toLowerCase() === 'ol',
+          items: Array.from(child.children).map(li => ({
             type: 'listItem',
             content: htmlToMarkdownAST(li, options, indentLevel + 1),
           })),
         })
-      } else if (elem.tagName.toLowerCase() === 'br') {
+      } else if (child.tagName.toLowerCase() === 'br') {
         debugLog('Line Break')
         result.push({ type: 'text', content: '\n' })
-      } else if (elem.tagName.toLowerCase() === 'table') {
+      } else if (child.tagName.toLowerCase() === 'table') {
         debugLog('Table')
 
         const colIds: string[] = []
 
         if (options?.enableTableColumnTracking) {
           // Generate unique column IDs
-          const headerCells = Array.from(elem.querySelectorAll('th, td'))
+          const headerCells = Array.from(child.querySelectorAll('th, td'))
           headerCells.forEach((_, index) => {
             colIds.push(`col-${index}`)
           })
         }
 
-        const tableRows = Array.from(elem.querySelectorAll('tr'))
+        const tableRows = Array.from(child.querySelectorAll('tr'))
         const markdownTableRows = tableRows.map(row => {
           let columnIndex = 0
           const cells = Array.from(row.querySelectorAll('th, td')).map(cell => {
@@ -227,8 +239,8 @@ export function htmlToMarkdownAST(
 
         result.push({ type: 'table', rows: markdownTableRows, colIds })
       } else {
-        const content = escapeMarkdownCharacters(elem.textContent || '')
-        switch (elem.tagName.toLowerCase()) {
+        const content = escapeMarkdownCharacters(child.textContent || '')
+        switch (child.tagName.toLowerCase()) {
           case 'noscript':
           case 'script':
           case 'style':
@@ -241,7 +253,7 @@ export function htmlToMarkdownAST(
               debugLog(`Bold: '${content}'`)
               result.push({
                 type: 'bold',
-                content: htmlToMarkdownAST(elem, options, indentLevel + 1),
+                content: htmlToMarkdownAST(child, options, indentLevel + 1),
               })
             }
             break
@@ -251,7 +263,7 @@ export function htmlToMarkdownAST(
               debugLog(`Italic: '${content}'`)
               result.push({
                 type: 'italic',
-                content: htmlToMarkdownAST(elem, options, indentLevel + 1),
+                content: htmlToMarkdownAST(child, options, indentLevel + 1),
               })
             }
             break
@@ -261,7 +273,7 @@ export function htmlToMarkdownAST(
               debugLog(`Strikethrough: '${content}'`)
               result.push({
                 type: 'strikethrough',
-                content: htmlToMarkdownAST(elem, options, indentLevel + 1),
+                content: htmlToMarkdownAST(child, options, indentLevel + 1),
               })
             }
             break
@@ -269,12 +281,12 @@ export function htmlToMarkdownAST(
             if (content) {
               // Handling inline code differently
               const isCodeBlock =
-                elem.parentNode &&
-                elem.parentNode.nodeName.toLowerCase() === 'pre'
+                child.parentNode &&
+                child.parentNode.nodeName.toLowerCase() === 'pre'
               debugLog(
                 `${isCodeBlock ? 'Code Block' : 'Inline Code'}: '${content}'`,
               )
-              const languageClass = elem.className
+              const languageClass = child.className
                 ?.split(' ')
                 .find(cls => cls.startsWith('language-'))
               const language = languageClass
@@ -282,7 +294,7 @@ export function htmlToMarkdownAST(
                 : ''
               result.push({
                 type: 'code',
-                content: elem.textContent?.trim() ?? '',
+                content: child.textContent?.trim() ?? '',
                 language,
                 inline: !isCodeBlock,
               })
@@ -292,7 +304,7 @@ export function htmlToMarkdownAST(
             debugLog('Blockquote')
             result.push({
               type: 'blockquote',
-              content: htmlToMarkdownAST(elem, options),
+              content: htmlToMarkdownAST(child, options),
             })
             break
           case 'article':
@@ -308,31 +320,46 @@ export function htmlToMarkdownAST(
           case 'section':
           case 'summary':
           case 'time':
-            debugLog(`Semantic HTML Element: '${elem.tagName}'`)
+            debugLog(`Semantic HTML Element: '${child.tagName}'`)
             result.push({
               type: 'semanticHtml',
-              htmlType: elem.tagName.toLowerCase() as any,
-              content: htmlToMarkdownAST(elem, options),
+              htmlType: child.tagName.toLowerCase() as any,
+              content: htmlToMarkdownAST(child, options),
             })
             break
           default: {
             const unhandledElementProcessing =
-              options?.processUnhandledElement?.(elem, options, indentLevel)
+              options?.processUnhandledElement?.(child, options, indentLevel)
             if (unhandledElementProcessing) {
-              debugLog(`Processing Unhandled Element: '${elem.tagName}'`)
+              debugLog(`Processing Unhandled Element: '${child.tagName}'`)
               result.push(...unhandledElementProcessing)
             } else {
-              debugLog(`Generic HTMLElement: '${elem.tagName}'`)
-              result.push(...htmlToMarkdownAST(elem, options, indentLevel + 1))
+              debugLog(`Generic HTMLElement: '${child.tagName}'`)
+              result.push(...htmlToMarkdownAST(child, options, indentLevel + 1))
             }
             break
           }
         }
       }
     }
-  })
+  }
+
+  const childNodes = element.shadowRoot?.childNodes ?? element.childNodes
+  childNodes.forEach(processChild)
 
   return result
+}
+
+function isTextNode(node: globalThis.Node): node is Text {
+  return node.nodeType === _Node.TEXT_NODE
+}
+
+function isElement(node: globalThis.Node): node is Element {
+  return node.nodeType === _Node.ELEMENT_NODE
+}
+
+function isSlotElement(node: globalThis.Node): node is HTMLSlotElement {
+  return isElement(node) && node.tagName === 'SLOT'
 }
 
 function isElementVisible(element: Element) {
