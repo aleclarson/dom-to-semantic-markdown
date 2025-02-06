@@ -51,7 +51,8 @@ export function extractMetaData(elem: Element, mode?: 'basic' | 'extended') {
 
   // Extract JSON-LD data
   if (mode === 'extended') {
-    const jsonLDScripts = elem.querySelectorAll(
+    // Search the entire document since the head or body may have them.
+    const jsonLDScripts = elem.ownerDocument.documentElement.querySelectorAll(
       'script[type="application/ld+json"]',
     )
 
