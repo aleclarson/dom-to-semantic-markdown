@@ -236,3 +236,20 @@ export function getVisibleText(element: Element): string {
 
   return text.trim()
 }
+
+export function escapeMarkdownCharacters(text: string, isInlineCode = false) {
+  if (isInlineCode || !text?.trim()) {
+    // In inline code, we don't escape any characters
+    return text
+  }
+
+  // First, replace special HTML characters with their entity equivalents
+  let escapedText = text
+    .replace(/&/g, '&amp;') // Replace & first
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Then escape characters that have special meaning in Markdown
+  escapedText = escapedText.replace(/([\\`*_{}[\]#+!|])/g, '\\$1')
+  return escapedText
+}

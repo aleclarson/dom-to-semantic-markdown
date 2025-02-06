@@ -1,5 +1,6 @@
 import { findAllInAST, findInAST } from './core/astUtils'
 import { findMainContent, wrapMainContent } from './core/domUtils'
+import { extractMetaData } from './core/extractMetaData'
 import { htmlToMarkdownAST } from './core/htmlToMarkdownAST'
 import { markdownASTToString } from './core/markdownASTToString'
 import { refifyUrls } from './core/urlUtils'
@@ -112,6 +113,7 @@ export function findAllInMarkdownAST(
 
 // Re-export core functions for advanced usage
 export {
+  extractMetaData,
   findMainContent,
   htmlToMarkdownAST,
   markdownASTToString,

@@ -31,7 +31,7 @@ console.log(markdown);
 
 ### `convertHtmlToMarkdown(html: string, options?: ConversionOptions): string`
 
-Converts an HTML string to semantic Markdown. In the browser, the `html` argument is ignored, and the current document is used.
+Converts an HTML string to semantic Markdown.
 
 - `html: string`: The HTML string to be converted.
 - `options?: ConversionOptions`: Optional configuration object to customize the conversion process. See [ConversionOptions](#ConversionOptions) for available settings.
@@ -47,9 +47,20 @@ Converts an HTML Element to semantic Markdown.
 
 **Returns:** `string` - The Markdown string representation of the provided HTML Element and its descendants.
 
+### `extractMetaData(element: Element, mode?: 'basic' | 'extended'): SemanticMarkdownAST.MetaDataNode['content']`
+
+Extracts metadata from an HTML Element.
+
+- `element: Element`: The HTML DOM Element to extract metadata from.
+- `mode?: 'basic' | 'extended'`: Optional mode to control the level of metadata extraction.
+  - `'basic'`: Includes standard meta tags like title, description, and keywords.
+  - `'extended'`: Includes basic meta tags, Open Graph tags, Twitter Card tags, and JSON-LD data.
+
+**Returns:** `SemanticMarkdownAST.MetaDataNode['content']` - An object containing the extracted metadata.
+
 ### `htmlToMarkdownAST(element: Element, options?: ExtractOptions, indentLevel?: number): SemanticMarkdownAST.Node[]`
 
-Converts an HTML `Element` into a Semantic Markdown Abstract Syntax Tree (AST). This function is the core of the HTML to Markdown conversion process, recursively parsing the HTML structure and generating a structured Markdown representation.
+Converts an HTML `Element` into a Semantic Markdown Abstract Syntax Tree (AST). This function recursively parses the HTML structure and generates a structured Markdown representation. It uses `extractMetaData` to extract metadata from the `<head>` element.
 
 - `element: Element`: The HTML DOM element to be converted.
 - `options?: ExtractOptions`: Optional configuration to customize the extraction process. See `ExtractOptions` for details.

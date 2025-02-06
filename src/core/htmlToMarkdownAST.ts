@@ -1,9 +1,7 @@
-import type {
-  ExtractOptions,
-  Node,
-  SemanticMarkdownAST,
-} from '../types/markdownTypes'
+import type { ExtractOptions, Node } from '../types/markdownTypes'
+import { escapeMarkdownCharacters } from './domUtils'
 import { _Node } from './ElementNode'
+import { extractMetaData } from './extractMetaData'
 
 const paragraphBreak: Node = Object.freeze({ type: 'text', content: '\n\n' })
 
@@ -13,12 +11,7 @@ export function htmlToMarkdownAST(
   indentLevel = 0,
 ): Node[] {
   const result: Node[] = []
-
-  const debugLog = (message: string) => {
-    if (options?.debug) {
-      console.log(message)
-    }
-  }
+  const debugLog = options?.debug ? console.log : () => {}
 
   element.childNodes.forEach(childElement => {
     const overriddenElementProcessing = options?.overrideElementProcessing?.(
@@ -44,79 +37,8 @@ export function htmlToMarkdownAST(
         return
       }
       if (elem.tagName.toLowerCase() === 'head' && !!options?.includeMetaData) {
-        const node = {
-          type: 'meta',
-          content: Object.create(null),
-        } as SemanticMarkdownAST.MetaDataNode
-
-        const setContent = (
-          type: keyof SemanticMarkdownAST.MetaDataNode['content'],
-          key: string | Record<string, any>[],
-          value?: string,
-        ) => {
-          if (type === 'jsonLd') {
-            node.content.jsonLd ||= key as Record<string, any>[]
-          } else {
-            node.content[type] ||= Object.create(null)
-            node.content[type]![key as string] = value!
-          }
-        }
-
-        elem.querySelectorAll('title').forEach(titleElem => {
-          setContent(
-            'standard',
-            'title',
-            escapeMarkdownCharacters(titleElem.text),
-          )
-        })
-
-        // Extract meta tags
-        const metaTags = elem.querySelectorAll('meta')
-        const nonSemanticTagNames = [
-          'viewport',
-          'referrer',
-          'Content-Security-Policy',
-        ]
-        metaTags.forEach(metaTag => {
-          const name = metaTag.getAttribute('name')
-          const property = metaTag.getAttribute('property')
-          const content = metaTag.getAttribute('content')
-
-          if (property?.startsWith('og:') && content) {
-            if (options.includeMetaData === 'extended') {
-              setContent('openGraph', property.substring(3), content)
-            }
-          } else if (name?.startsWith('twitter:') && content) {
-            if (options.includeMetaData === 'extended') {
-              setContent('twitter', name.substring(8), content)
-            }
-          } else if (name && !nonSemanticTagNames.includes(name) && content) {
-            setContent('standard', name, content)
-          }
-        })
-
-        // Extract JSON-LD data
-        if (options.includeMetaData === 'extended') {
-          const jsonLDScripts = elem.querySelectorAll(
-            'script[type="application/ld+json"]',
-          )
-
-          jsonLDScripts.forEach(script => {
-            try {
-              const jsonContent = script.textContent
-              if (jsonContent) {
-                let parsedContent = JSON.parse(jsonContent)
-                if (!Array.isArray(parsedContent)) {
-                  parsedContent = [parsedContent]
-                }
-                setContent('jsonLd', parsedContent)
-              }
-            } catch (error) {
-              console.error('Failed to parse JSON-LD', error)
-            }
-          })
-        }
-        result.push(node)
+        const metaData = extractMetaData(elem, options.includeMetaData)
+        result.push({ type: 'meta', content: metaData })
         return
       }
       if (options?.excludeInvisibleElements && !isElementVisible(elem)) {
@@ -419,21 +341,4 @@ function isElementVisible(element: Element) {
   }
   // SVG elements are visible, I guess.
   return true
-}
-
-function escapeMarkdownCharacters(text: string, isInlineCode = false) {
-  if (isInlineCode || !text?.trim()) {
-    // In inline code, we don't escape any characters
-    return text
-  }
-
-  // First, replace special HTML characters with their entity equivalents
-  let escapedText = text
-    .replace(/&/g, '&amp;') // Replace & first
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-
-  // Then escape characters that have special meaning in Markdown
-  escapedText = escapedText.replace(/([\\`*_{}[\]#+!|])/g, '\\$1')
-  return escapedText
 }
