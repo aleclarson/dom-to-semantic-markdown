@@ -9,7 +9,12 @@ import { extractMetaData } from './extractMetaData'
 
 const noop = () => {}
 
-const paragraphBreak: MarkdownNode = Object.freeze({
+const lineBreak: MarkdownNode = Object.freeze({
+  type: 'text',
+  content: '\n',
+})
+
+const contentBreak: MarkdownNode = Object.freeze({
   type: 'text',
   content: '\n\n',
 })
@@ -95,7 +100,7 @@ const translators: ElementTranslatorMap = {
   p(paragraphNode, result, options) {
     result.push(...htmlToMarkdownAST(paragraphNode, options))
     // Add a new line after the paragraph
-    result.push(paragraphBreak)
+    result.push(contentBreak)
   },
 
   // Links
@@ -180,12 +185,12 @@ const translators: ElementTranslatorMap = {
 
   // Line breaks
   br(_, result) {
-    result.push({ type: 'text', content: '\n' })
+    result.push(lineBreak)
   },
 
   // Content breaks
   hr(_, result) {
-    result.push({ type: 'text', content: '\n\n' })
+    result.push(contentBreak)
   },
 
   // Tables
