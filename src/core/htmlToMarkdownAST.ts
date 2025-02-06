@@ -49,12 +49,11 @@ export function htmlToMarkdownAST(
 
         const setContent = (
           type: keyof SemanticMarkdownAST.MetaDataNode['content'],
-          key: string | Record<string, any>,
+          key: string | Record<string, any>[],
           value?: string,
         ) => {
           if (type === 'jsonLd') {
-            node.content.jsonLd ||= []
-            node.content.jsonLd.push(key as Record<string, any>)
+            node.content.jsonLd ||= key as Record<string, any>[]
           } else {
             node.content[type] ||= Object.create(null)
             node.content[type]![key as string] = value!
