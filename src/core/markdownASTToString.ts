@@ -238,8 +238,8 @@ function markdownContentASTToString(
         }
         case 'code':
           if (node.inline) {
-            const isLsatWhitespace = /\s/.test(markdownString.slice(-1))
-            if (!isLsatWhitespace) {
+            const isLastWhitespace = /\s/.test(markdownString.slice(-1))
+            if (!isLastWhitespace) {
               markdownString += ' '
             }
             markdownString += `\`${node.content}\``
