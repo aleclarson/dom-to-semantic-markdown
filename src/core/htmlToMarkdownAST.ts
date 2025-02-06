@@ -19,6 +19,11 @@ const contentBreak: MarkdownNode = Object.freeze({
   content: '\n\n',
 })
 
+const horizontalRule: MarkdownNode = Object.freeze({
+  type: 'text',
+  content: '---\n\n',
+})
+
 type ElementTranslator<T extends keyof HTMLElementTagNameMap> = (
   element: HTMLElementTagNameMap[T],
   result: MarkdownNode[],
@@ -199,7 +204,11 @@ const translators: ElementTranslatorMap = {
 
   // Content breaks
   hr(_, result) {
-    result.push(contentBreak)
+    const prevSibling = result.at(-1)
+    if (prevSibling !== contentBreak) {
+      result.push(contentBreak)
+    }
+    result.push(horizontalRule)
   },
 
   // Tables
