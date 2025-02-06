@@ -370,7 +370,7 @@ function isSlotElement(element: Element): element is HTMLSlotElement {
 
 function isElementVisible(element: Element) {
   if (element instanceof HTMLElement) {
-    return element.offsetWidth > 0 && element.offsetHeight > 0
+    return element.offsetWidth !== 0 || element.offsetHeight !== 0
   }
   // SVG elements are visible, I guess.
   return true
