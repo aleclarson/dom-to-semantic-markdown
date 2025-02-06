@@ -5,6 +5,8 @@ import type {
 } from '../types/markdownTypes'
 import { _Node } from './ElementNode'
 
+const paragraphBreak: Node = Object.freeze({ type: 'text', content: '\n\n' })
+
 export function htmlToMarkdownAST(
   element: Element,
   options?: ExtractOptions,
@@ -138,7 +140,7 @@ export function htmlToMarkdownAST(
         debugLog('Paragraph')
         result.push(...htmlToMarkdownAST(elem, options))
         // Add a new line after the paragraph
-        result.push({ type: 'text', content: '\n\n' })
+        result.push(paragraphBreak)
       } else if (elem.tagName.toLowerCase() === 'a') {
         debugLog(
           `Link: '${(elem as HTMLAnchorElement).href}' with text '${elem.textContent}'`,
