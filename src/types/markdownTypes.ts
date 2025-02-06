@@ -160,6 +160,10 @@ export interface ExtractOptions {
    */
   includeMetaData?: 'basic' | 'extended' | false
   /**
+   * Whether to check elements for visibility before extracting.
+   */
+  excludeInvisibleElements?: boolean
+  /**
    * Enables adding correlational IDs to table cells in the Markdown output.
    */
   enableTableColumnTracking?: boolean

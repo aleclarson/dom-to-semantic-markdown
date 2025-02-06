@@ -38,6 +38,9 @@ export function htmlToMarkdownAST(
       }
     } else if (childElement.nodeType === _Node.ELEMENT_NODE) {
       const elem = childElement as Element
+      if (options?.excludeInvisibleElements && !isElementVisible(elem)) {
+        return
+      }
       if (/^h[1-6]$/i.test(elem.tagName)) {
         const level = Number.parseInt(elem.tagName.substring(1)) as
           | 1
@@ -401,6 +404,14 @@ export function htmlToMarkdownAST(
   })
 
   return result
+}
+
+function isElementVisible(element: Element) {
+  if (element instanceof HTMLElement) {
+    return element.offsetWidth > 0 && element.offsetHeight > 0
+  }
+  // SVG elements are visible, I guess.
+  return true
 }
 
 function escapeMarkdownCharacters(text: string, isInlineCode = false) {
