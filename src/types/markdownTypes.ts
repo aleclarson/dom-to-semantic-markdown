@@ -160,6 +160,10 @@ export interface ExtractOptions {
    */
   includeMetaData?: 'basic' | 'extended' | false
   /**
+   * Avoid extracting content from these tags.
+   */
+  excludeTagNames?: string[]
+  /**
    * Whether to check elements for visibility before extracting.
    */
   excludeInvisibleElements?: boolean

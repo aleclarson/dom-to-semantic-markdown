@@ -38,6 +38,9 @@ export function htmlToMarkdownAST(
       }
     } else if (childElement.nodeType === _Node.ELEMENT_NODE) {
       const elem = childElement as Element
+      if (options?.excludeTagNames?.includes(elem.tagName.toLowerCase())) {
+        return
+      }
       if (options?.excludeInvisibleElements && !isElementVisible(elem)) {
         return
       }

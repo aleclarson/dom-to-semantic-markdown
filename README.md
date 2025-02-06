@@ -82,6 +82,7 @@ This function is essential for completing the HTML to Markdown conversion proces
   - `'basic'`: Includes standard meta tags like title, description, and keywords.
   - `'extended'`: Includes basic meta tags, Open Graph tags, Twitter Card tags, and JSON-LD data.
   - `false`: Disables metadata extraction.
+- `excludeTagNames?: string[]`: Avoid extracting content from these tags.
 - `excludeInvisibleElements?: boolean`: Whether to exclude elements that are not visible.
 - `enableTableColumnTracking?: boolean`: Adds unique identifiers to table columns.
 - `overrideElementProcessing?: (element: Element, options: ConversionOptions, indentLevel: number) => SemanticMarkdownAST[] | undefined`: Custom processing for HTML elements.
