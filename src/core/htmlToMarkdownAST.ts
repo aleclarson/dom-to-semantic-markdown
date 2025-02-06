@@ -98,8 +98,13 @@ type ElementTranslatorMap = {
 const translators: ElementTranslatorMap = {
   // Paragraphs
   p(paragraphNode, result, options) {
-    result.push(...htmlToMarkdownAST(paragraphNode, options))
-    // Add a new line after the paragraph
+    const content = htmlToMarkdownAST(paragraphNode, options)
+    if (!content.length) {
+      return
+    }
+    for (const node of content) {
+      result.push(node)
+    }
     result.push(contentBreak)
   },
 
@@ -141,10 +146,14 @@ const translators: ElementTranslatorMap = {
           ],
         })
       } else {
+        const content = htmlToMarkdownAST(linkNode, options)
+        if (!content.length) {
+          return
+        }
         result.push({
           type: 'link',
           href: href,
-          content: htmlToMarkdownAST(linkNode, options),
+          content,
         })
       }
     }
