@@ -393,6 +393,16 @@ export function htmlToMarkdownAST(
         return
       }
 
+      const role = child.getAttribute('role')
+      if (role === 'article') {
+        result.push({
+          type: 'semanticHtml',
+          htmlType: 'article',
+          content: htmlToMarkdownAST(child, options),
+        })
+        return
+      }
+
       const translator = translators[
         tagName as keyof typeof translators
       ] as ElementTranslator<any>
