@@ -50,13 +50,11 @@ export function htmlToMarkdownAST(
         result.push(...overrideResult)
       }
     } else {
-      if (options?.excludeTagNames?.includes(child.tagName.toLowerCase())) {
+      const tagName = child.tagName.toLowerCase()
+      if (options?.excludeTagNames?.includes(tagName)) {
         return
       }
-      if (
-        child.tagName.toLowerCase() === 'head' &&
-        !!options?.includeMetaData
-      ) {
+      if (tagName === 'head' && !!options?.includeMetaData) {
         const metaData = extractMetaData(child, options.includeMetaData)
         result.push({ type: 'meta', content: metaData })
         return
@@ -64,8 +62,8 @@ export function htmlToMarkdownAST(
       if (options?.excludeInvisibleElements && !isElementVisible(child)) {
         return
       }
-      if (/^h[1-6]$/i.test(child.tagName)) {
-        const level = Number.parseInt(child.tagName.substring(1)) as
+      if (/^h[1-6]$/.test(tagName)) {
+        const level = Number.parseInt(tagName.substring(1)) as
           | 1
           | 2
           | 3
@@ -78,12 +76,12 @@ export function htmlToMarkdownAST(
           level,
           content: htmlToMarkdownAST(child, options), // Process child elements
         })
-      } else if (child.tagName.toLowerCase() === 'p') {
+      } else if (tagName === 'p') {
         debugLog('Paragraph')
         result.push(...htmlToMarkdownAST(child, options))
         // Add a new line after the paragraph
         result.push(paragraphBreak)
-      } else if (child.tagName.toLowerCase() === 'a') {
+      } else if (tagName === 'a') {
         debugLog(
           `Link: '${(child as HTMLAnchorElement).href}' with text '${child.textContent}'`,
         )
@@ -130,7 +128,7 @@ export function htmlToMarkdownAST(
             })
           }
         }
-      } else if (child.tagName.toLowerCase() === 'img') {
+      } else if (tagName === 'img') {
         debugLog(
           `Image: src='${(child as HTMLImageElement).src}', alt='${(child as HTMLImageElement).alt}'`,
         )
@@ -154,7 +152,7 @@ export function htmlToMarkdownAST(
             alt: escapeMarkdownCharacters((child as HTMLImageElement).alt),
           })
         }
-      } else if (child.tagName.toLowerCase() === 'video') {
+      } else if (tagName === 'video') {
         debugLog(
           `Video: src='${(child as HTMLVideoElement).src}', poster='${(child as HTMLVideoElement).poster}', controls='${(child as HTMLVideoElement).controls}'`,
         )
@@ -164,25 +162,20 @@ export function htmlToMarkdownAST(
           poster: escapeMarkdownCharacters((child as HTMLVideoElement).poster),
           controls: (child as HTMLVideoElement).controls,
         })
-      } else if (
-        child.tagName.toLowerCase() === 'ul' ||
-        child.tagName.toLowerCase() === 'ol'
-      ) {
-        debugLog(
-          `${child.tagName.toLowerCase() === 'ul' ? 'Unordered' : 'Ordered'} List`,
-        )
+      } else if (tagName === 'ul' || tagName === 'ol') {
+        debugLog(`${tagName === 'ul' ? 'Unordered' : 'Ordered'} List`)
         result.push({
           type: 'list',
-          ordered: child.tagName.toLowerCase() === 'ol',
+          ordered: tagName === 'ol',
           items: Array.from(child.children).map(li => ({
             type: 'listItem',
             content: htmlToMarkdownAST(li, options, indentLevel + 1),
           })),
         })
-      } else if (child.tagName.toLowerCase() === 'br') {
+      } else if (tagName === 'br') {
         debugLog('Line Break')
         result.push({ type: 'text', content: '\n' })
-      } else if (child.tagName.toLowerCase() === 'table') {
+      } else if (tagName === 'table') {
         debugLog('Table')
 
         const colIds: string[] = []
@@ -248,7 +241,7 @@ export function htmlToMarkdownAST(
         result.push({ type: 'table', rows: markdownTableRows, colIds })
       } else {
         const content = escapeMarkdownCharacters(child.textContent || '')
-        switch (child.tagName.toLowerCase()) {
+        switch (tagName) {
           case 'noscript':
           case 'script':
           case 'style':
@@ -331,7 +324,7 @@ export function htmlToMarkdownAST(
             debugLog(`Semantic HTML Element: '${child.tagName}'`)
             result.push({
               type: 'semanticHtml',
-              htmlType: child.tagName.toLowerCase() as any,
+              htmlType: tagName as any,
               content: htmlToMarkdownAST(child, options),
             })
             break
