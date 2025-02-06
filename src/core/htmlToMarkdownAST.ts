@@ -103,7 +103,11 @@ export function htmlToMarkdownAST(
             try {
               const jsonContent = script.textContent
               if (jsonContent) {
-                setContent('jsonLd', JSON.parse(jsonContent))
+                let parsedContent = JSON.parse(jsonContent)
+                if (!Array.isArray(parsedContent)) {
+                  parsedContent = [parsedContent]
+                }
+                setContent('jsonLd', parsedContent)
               }
             } catch (error) {
               console.error('Failed to parse JSON-LD', error)
