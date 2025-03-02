@@ -1,6 +1,6 @@
 {
   "name": "@alloc/dom-to-semantic-markdown",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "DOM to Semantic-Markdown for use in LLMs",
   "type": "module",
   "repository": {
